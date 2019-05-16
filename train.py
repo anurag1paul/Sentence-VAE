@@ -178,7 +178,7 @@ def main(args):
 
             if split == 'valid':
                 val_loss = torch.mean(tracker['ELBO'])
-                optimizer.step(val_loss)
+                scheduler.step(val_loss)
                 if early_stop.step(val_loss):
                     print("Early Stopping after {}".format(epoch))
                     break
