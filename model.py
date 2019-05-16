@@ -37,6 +37,8 @@ class SentenceVAE(nn.Module):
         else:
             raise ValueError()
 
+        self.encoder_rnn_type = 'lstm'
+
         self.encoder_rnn = nn.LSTM(embedding_size, hidden_size, num_layers=num_layers, bidirectional=self.bidirectional, batch_first=True)
         self.decoder_rnn = nn.RNN(embedding_size, hidden_size, num_layers=num_layers, bidirectional=self.bidirectional, batch_first=True)
 
@@ -59,6 +61,8 @@ class SentenceVAE(nn.Module):
         packed_input = rnn_utils.pack_padded_sequence(input_embedding, sorted_lengths.data.tolist(), batch_first=True)
 
         _, hidden = self.encoder_rnn(packed_input)
+        if self.encoder_rnn_type == 'lstm':
+            hidden = hidden[0]
 
         if self.bidirectional or self.num_layers > 1:
             # flatten hidden state
