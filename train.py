@@ -176,7 +176,7 @@ def main(args):
 
             if split == 'valid' and early_stop.step(torch.mean(tracker['ELBO'])):
                 print("Early Stopping after {}".format(epoch))
-                break
+                exit(0)
 
 
 if __name__ == '__main__':
