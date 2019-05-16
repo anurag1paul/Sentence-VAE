@@ -141,8 +141,8 @@ def main(args):
                             if torch.is_tensor(v):
                                 batch_data_enc[k] = to_var(v)
 
-                        burn_sents_len = batch_data_enc["length"].data.numpy()
-                        burn_num_words += float(np.sum(burn_sents_len))
+                        burn_sents_len = batch_data_enc["length"].data
+                        burn_num_words += float(burn_sents_len.sum())
 
                         # Forward pass
                         logp, mean, logv, z = model(batch_data_enc['input'], batch_data_enc['length'])
@@ -151,7 +151,7 @@ def main(args):
                                                                mean, logv, args.anneal_function, step, args.k, args.x0)
 
                         loss = NLL_loss + KL_weight * KL_loss
-                        burn_cur_loss += float(loss.sum().detach().data.numpy())
+                        burn_cur_loss += float(loss.sum().detach().data)
 
                         loss = loss.mean(dim=-1)
                         loss.backward()
