@@ -50,8 +50,6 @@ def main(args):
     if torch.cuda.is_available():
         model = model.cuda()
 
-    print(model)
-
     if args.tensorboard_logging:
         writer = SummaryWriter(os.path.join(args.logdir, expierment_name(args,ts)))
         writer.add_text("model", str(model))
@@ -84,11 +82,13 @@ def main(args):
 
         return NLL_loss, KL_loss, KL_weight
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+    enc_optimizer = torch.optim.Adam(model.encoder_rnn.parameters(), lr=args.learning_rate)
+    dec_optimizer = torch.optim.Adam(model.decoder_rnn.parameters(), lr=args.learning_rate)
 
     tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.Tensor
     step = 0
-    early_stop = EarlyStopping(min_delta=0.001, patience=5)
+    early_stop = EarlyStopping(min_delta=0.01, patience=5)
+
     for epoch in range(args.epochs):
 
         for split in splits:
@@ -117,6 +117,58 @@ def main(args):
                     if torch.is_tensor(v):
                         batch[k] = to_var(v)
 
+                if args.aggressive and split == "train":
+                    sub_iter = 0
+                    batch_data_enc = batch
+                    burn_num_words = 0
+                    burn_pre_loss = 1e4
+                    burn_cur_loss = 0
+
+                    aggressive_loader = iter(DataLoader(
+                        dataset=datasets[split],
+                        batch_size=args.batch_size,
+                        shuffle=split=='train',
+                        num_workers=cpu_count(),
+                        pin_memory=torch.cuda.is_available()
+                    ))
+
+                    while sub_iter < 100:
+
+                        enc_optimizer.zero_grad()
+                        dec_optimizer.zero_grad()
+
+                        for k, v in batch_data_enc.items():
+                            if torch.is_tensor(v):
+                                batch_data_enc[k] = to_var(v)
+
+                        burn_sents_len = batch_data_enc["length"].data.numpy()
+                        burn_num_words += float(np.sum(burn_sents_len))
+
+                        # Forward pass
+                        logp, mean, logv, z = model(batch_data_enc['input'], batch_data_enc['length'])
+
+                        NLL_loss, KL_loss, KL_weight = loss_fn(logp, batch_data_enc['target'], batch_data_enc['length'],
+                                                               mean, logv, args.anneal_function, step, args.k, args.x0)
+
+                        loss = NLL_loss + KL_weight * KL_loss
+                        burn_cur_loss += float(loss.sum().detach().data.numpy())
+
+                        loss = loss.mean(dim=-1)
+                        loss.backward()
+
+                        enc_optimizer.step()
+
+                        batch_data_enc = next(aggressive_loader)
+
+                        if sub_iter % 15 == 0:
+                            burn_cur_loss = burn_cur_loss / burn_num_words
+                            if burn_pre_loss - burn_cur_loss < 0:
+                                break
+                            burn_pre_loss = burn_cur_loss
+                            burn_cur_loss = burn_num_words = 0
+
+                        sub_iter += 1
+
                 # Forward pass
                 logp, mean, logv, z = model(batch['input'], batch['length'])
 
@@ -131,9 +183,12 @@ def main(args):
 
                 # backward + optimization
                 if split == 'train':
-                    optimizer.zero_grad()
+                    enc_optimizer.zero_grad()
+                    dec_optimizer.zero_grad()
                     loss.backward()
-                    optimizer.step()
+                    if not args.aggressive:
+                        enc_optimizer.step()
+                    dec_optimizer.step()
                     step += 1
 
                 # bookkeeping
@@ -210,6 +265,8 @@ if __name__ == '__main__':
     parser.add_argument('-tb','--tensorboard_logging', action='store_true')
     parser.add_argument('-log','--logdir', type=str, default='logs')
     parser.add_argument('-bin','--save_model_path', type=str, default='bin')
+
+    parser.add_argument('-ag', '--aggressive', action='store_true')
 
     args = parser.parse_args()
 
