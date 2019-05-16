@@ -181,7 +181,7 @@ def main(args):
                 scheduler.step(val_loss)
                 if early_stop.step(val_loss):
                     print("Early Stopping after {}".format(epoch))
-                    break
+                    exit(0)
 
 
 if __name__ == '__main__':
