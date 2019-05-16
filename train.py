@@ -6,6 +6,7 @@ import argparse
 import numpy as np
 from multiprocessing import cpu_count
 from tensorboardX import SummaryWriter
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from collections import OrderedDict, defaultdict
 
@@ -85,6 +86,7 @@ def main(args):
         return NLL_loss, KL_loss, KL_weight
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+    scheduler = ReduceLROnPlateau(optimizer, 'min')
 
     tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.Tensor
     step = 0
@@ -174,9 +176,12 @@ def main(args):
                 torch.save(model.state_dict(), checkpoint_path)
                 print("Model saved at %s"%checkpoint_path)
 
-            if split == 'valid' and early_stop.step(torch.mean(tracker['ELBO'])):
-                print("Early Stopping after {}".format(epoch))
-                break
+            if split == 'valid':
+                val_loss = torch.mean(tracker['ELBO'])
+                optimizer.step(val_loss)
+                if early_stop.step(val_loss):
+                    print("Early Stopping after {}".format(epoch))
+                    break
 
 
 if __name__ == '__main__':
