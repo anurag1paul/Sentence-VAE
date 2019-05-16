@@ -68,6 +68,7 @@ def main(args):
             return min(1, step/x0)
 
     NLL = torch.nn.NLLLoss(size_average=False, ignore_index=datasets['train'].pad_idx)
+
     def loss_fn(logp, target, length, mean, logv, anneal_function, step, k, x0):
 
         # cut-off unnecessary padding from target, and flatten
@@ -87,7 +88,7 @@ def main(args):
 
     tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.Tensor
     step = 0
-    early_stop = EarlyStopping(patience=5)
+    early_stop = EarlyStopping(min_delta=0.001, patience=5)
     for epoch in range(args.epochs):
 
         for split in splits:
@@ -134,7 +135,6 @@ def main(args):
                     loss.backward()
                     optimizer.step()
                     step += 1
-
 
                 # bookkeeping
                 tracker['ELBO'] = torch.cat((tracker['ELBO'], loss.data))
