@@ -40,7 +40,7 @@ class SentenceVAE(nn.Module):
         self.encoder_rnn_type = 'lstm'
 
         self.encoder_rnn = nn.LSTM(embedding_size, hidden_size, num_layers=num_layers, bidirectional=self.bidirectional, batch_first=True)
-        self.decoder_rnn = nn.RNN(embedding_size, hidden_size, num_layers=num_layers, bidirectional=self.bidirectional, batch_first=True)
+        self.decoder_rnn = nn.GRU(embedding_size, hidden_size, num_layers=num_layers, bidirectional=self.bidirectional, batch_first=True)
 
         self.hidden_factor = (2 if bidirectional else 1) * num_layers
 
