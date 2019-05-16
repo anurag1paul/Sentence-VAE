@@ -9,6 +9,7 @@ from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from collections import OrderedDict, defaultdict
 
+from early_stopping import EarlyStopping
 from ptb import PTB
 from utils import to_var, idx2word, expierment_name
 from model import SentenceVAE
@@ -86,6 +87,7 @@ def main(args):
 
     tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.Tensor
     step = 0
+    early_stop = EarlyStopping(patience=5)
     for epoch in range(args.epochs):
 
         for split in splits:
@@ -134,7 +136,7 @@ def main(args):
                     step += 1
 
 
-                # bookkeepeing
+                # bookkeeping
                 tracker['ELBO'] = torch.cat((tracker['ELBO'], loss.data))
 
                 if args.tensorboard_logging:
@@ -171,6 +173,10 @@ def main(args):
                 checkpoint_path = os.path.join(save_model_path, "E%i.pytorch"%(epoch))
                 torch.save(model.state_dict(), checkpoint_path)
                 print("Model saved at %s"%checkpoint_path)
+
+            if split == 'valid' and early_stop.step(torch.mean(tracker['ELBO'])):
+                print("Early Stopping after {}".format(epoch))
+                break
 
 
 if __name__ == '__main__':
