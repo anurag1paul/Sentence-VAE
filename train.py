@@ -117,7 +117,7 @@ def main(args):
                     if torch.is_tensor(v):
                         batch[k] = to_var(v)
 
-                if args.aggressive and split == "train":
+                if args.aggressive and split == "train" and epoch < 2:
                     sub_iter = 0
                     batch_data_enc = batch
                     burn_num_words = 0
