@@ -65,6 +65,8 @@ def main(args):
             return float(1/(1+np.exp(-k*(step-x0))))
         elif anneal_function == 'linear':
             return min(1, step/x0)
+        else:
+            return 1.0	
 
     NLL = torch.nn.NLLLoss(size_average=False, ignore_index=datasets['train'].pad_idx)
 
@@ -121,7 +123,7 @@ def main(args):
                     if torch.is_tensor(v):
                         batch[k] = to_var(v)
 
-                if args.aggressive and split == "train" and epoch < 2:
+                if args.aggressive and split == "train":
                     sub_iter = 0
                     batch_data_enc = batch
                     burn_num_words = 0
@@ -239,7 +241,7 @@ def main(args):
 
             if split == 'valid' and early_stop.step(torch.mean(tracker['ELBO'])):
                 print("Early Stopping after {}".format(epoch))
-                break
+                exit(0)
 
 
 if __name__ == '__main__':
@@ -282,7 +284,7 @@ if __name__ == '__main__':
     args.anneal_function = args.anneal_function.lower()
 
     assert args.rnn_type in ['rnn', 'lstm', 'gru']
-    assert args.anneal_function in ['logistic', 'linear']
+    assert args.anneal_function in ['logistic', 'linear', 'none']
     assert 0 <= args.word_dropout <= 1
 
     main(args)
