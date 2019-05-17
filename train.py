@@ -192,8 +192,8 @@ def main(args):
 
                 # bookkeeping
                 tracker['ELBO'] = torch.cat((tracker['ELBO'], loss.data))
-                tracker['NLL'] = torch.cat((tracker['NLL'], NLL_loss.data[0]/batch_size))
-                tracker['KL'] = torch.cat((tracker['KL'], KL_loss.data[0]/batch_size))
+                tracker['NLL'] = torch.cat((tracker['NLL'], NLL_loss.data/batch_size))
+                tracker['KL'] = torch.cat((tracker['KL'], KL_loss.data/batch_size))
 
                 if args.tensorboard_logging:
                     writer.add_scalar("%s/ELBO"%split.upper(), loss.data[0], epoch*len(data_loader) + iteration)
