@@ -150,10 +150,9 @@ def main(args):
                         NLL_loss, KL_loss, KL_weight = loss_fn(logp, batch_data_enc['target'], batch_data_enc['length'],
                                                                mean, logv, args.anneal_function, step, args.k, args.x0)
 
-                        loss = NLL_loss + KL_weight * KL_loss
+                        loss = (NLL_loss + KL_weight * KL_loss)/batch_size
                         burn_cur_loss += float(loss.sum().detach().data)
 
-                        loss = loss.mean(dim=-1)
                         loss.backward()
 
                         enc_optimizer.step()
@@ -193,6 +192,8 @@ def main(args):
 
                 # bookkeeping
                 tracker['ELBO'] = torch.cat((tracker['ELBO'], loss.data))
+                tracker['NLL'] = torch.cat((tracker['NLL'], NLL_loss.data[0]/batch_size))
+                tracker['KL'] = torch.cat((tracker['KL'], KL_loss.data[0]/batch_size))
 
                 if args.tensorboard_logging:
                     writer.add_scalar("%s/ELBO"%split.upper(), loss.data[0], epoch*len(data_loader) + iteration)
@@ -210,7 +211,10 @@ def main(args):
                     tracker['target_sents'] += idx2word(batch['target'].data, i2w=datasets['train'].get_i2w(), pad_idx=datasets['train'].pad_idx)
                     tracker['z'] = torch.cat((tracker['z'], z.data), dim=0)
 
-            print("%s Epoch %02d/%i, Mean ELBO %9.4f"%(split.upper(), epoch, args.epochs, torch.mean(tracker['ELBO'])))
+            print("%s Epoch %02d/%i, Mean ELBO %9.4f NLL %9.4f KL %9.4f"%(split.upper(), epoch,
+                                                                          args.epochs, torch.mean(tracker['ELBO']),
+                                                                          torch.mean(tracker['NLL']),
+                                                                          torch.mean(tracker['KL'])))
 
             if args.tensorboard_logging:
                 writer.add_scalar("%s-Epoch/ELBO"%split.upper(), torch.mean(tracker['ELBO']), epoch)
