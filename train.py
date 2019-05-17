@@ -124,7 +124,7 @@ def main(args):
                 NLL_loss, KL_loss, KL_weight = loss_fn(logp, batch['target'],
                     batch['length'], mean, logv, args.anneal_function, step, args.k, args.x0)
 
-                if split == 'valid':
+                if split != 'train':
                     KL_weight = 1.0
 
                 loss = (NLL_loss + KL_weight * KL_loss)/batch_size
