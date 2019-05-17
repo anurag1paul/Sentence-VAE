@@ -132,7 +132,7 @@ def main(args):
                         pin_memory=torch.cuda.is_available()
                     ))
 
-                    while sub_iter < 100:
+                    while sub_iter < 50:
 
                         enc_optimizer.zero_grad()
                         dec_optimizer.zero_grad()
@@ -160,7 +160,7 @@ def main(args):
 
                         batch_data_enc = next(aggressive_loader)
 
-                        if sub_iter % 15 == 0:
+                        if sub_iter % 5 == 0:
                             burn_cur_loss = burn_cur_loss / burn_num_words
                             if burn_pre_loss - burn_cur_loss < 0:
                                 break
