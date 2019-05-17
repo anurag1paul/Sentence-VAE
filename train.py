@@ -1,3 +1,4 @@
+import itertools
 import os
 import json
 import time
@@ -82,8 +83,11 @@ def main(args):
 
         return NLL_loss, KL_loss, KL_weight
 
-    enc_optimizer = torch.optim.Adam(model.encoder_rnn.parameters(), lr=args.learning_rate)
-    dec_optimizer = torch.optim.Adam(model.decoder_rnn.parameters(), lr=args.learning_rate)
+    enc_optimizer = torch.optim.Adam(itertools.chain(model.embedding.parameters(), model.embedding_dropout.parameters(),
+                                                     model.encoder_rnn.parameters(), model.hidden2mean.parameters(),
+                                                     model.hidden2logv.parameters()), lr=args.learning_rate)
+    dec_optimizer = torch.optim.Adam(itertools.chain(model.latent2hidden.parameters(), model.outputs2vocab.parameters(),
+                                     model.decoder_rnn.parameters()), lr=args.learning_rate)
 
     tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.Tensor
     step = 0
