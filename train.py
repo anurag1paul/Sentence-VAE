@@ -65,7 +65,9 @@ def main(args):
         if anneal_function == 'logistic':
             return float(1/(1+np.exp(-k*(step-x0))))
         elif anneal_function == 'linear':
-            return min(1, step/x0)
+            return min(1, step/x0) 
+        else:
+            return 1.0
 
     NLL = torch.nn.NLLLoss(size_average=False, ignore_index=datasets['train'].pad_idx)
 
@@ -217,7 +219,7 @@ if __name__ == '__main__':
     args.anneal_function = args.anneal_function.lower()
 
     assert args.rnn_type in ['rnn', 'lstm', 'gru']
-    assert args.anneal_function in ['logistic', 'linear']
+    assert args.anneal_function in ['logistic', 'linear', 'none']
     assert 0 <= args.word_dropout <= 1
 
     main(args)
