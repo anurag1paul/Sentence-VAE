@@ -93,7 +93,7 @@ def main(args):
 
     tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.Tensor
     step = 0
-    early_stop = EarlyStopping(min_delta=0.01, patience=5)
+    early_stop = EarlyStopping(min_delta=0.001, patience=10)
 
     for epoch in range(args.epochs):
 
@@ -138,7 +138,7 @@ def main(args):
                         pin_memory=torch.cuda.is_available()
                     ))
 
-                    while sub_iter < 50:
+                    while sub_iter < 100:
 
                         enc_optimizer.zero_grad()
                         dec_optimizer.zero_grad()
